@@ -2,43 +2,4 @@
 
 Tests are located [here](src/test/java/org/hibernate/bugs/MatchAllSpecificationBugTest.java).
 
-I wanted to to use `Specification.where(null)` as a "match all" `org.springframework.data.jpa.domain.Specification` (a specification without any restriction).
-
-But I get a `NullPointerException` inside Hibernate code when using it with a `CriteriaBuilder`:
-
-```java
-Specification<Task> matchAllSpecification = Specification.where(null);
-
-CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-CriteriaQuery<Task> query = cb.createQuery(Task.class);
-
-Root<Task> root = query.from(Task.class);
-query.where(matchAllSpecification.toPredicate(root, query, cb));
-
-entityManager.createQuery(query).getResultList();
-```
-
-Stack trace :
-```
-java.lang.NullPointerException: Cannot invoke "org.hibernate.query.sqm.tree.expression.SqmExpression.getExpressible()" because "booleanExpression" is null
-
-	at org.hibernate.query.sqm.tree.predicate.SqmBooleanExpressionPredicate.<init>(SqmBooleanExpressionPredicate.java:38)
-	at org.hibernate.query.sqm.tree.predicate.SqmBooleanExpressionPredicate.<init>(SqmBooleanExpressionPredicate.java:31)
-	at org.hibernate.query.sqm.internal.SqmCriteriaNodeBuilder.wrap(SqmCriteriaNodeBuilder.java:497)
-	at org.hibernate.query.sqm.tree.select.SqmQuerySpec.setRestriction(SqmQuerySpec.java:362)
-	at org.hibernate.query.sqm.tree.select.AbstractSqmSelectQuery.where(AbstractSqmSelectQuery.java:315)
-	at org.hibernate.query.sqm.tree.select.SqmSelectStatement.where(SqmSelectStatement.java:373)
-	at org.hibernate.query.sqm.tree.select.SqmSelectStatement.where(SqmSelectStatement.java:46)
-	at org.hibernate.bugs.MatchAllSpecificationBugTest.findAllTasks(JPAUnitTestCase.java:69)
-	at org.hibernate.bugs.MatchAllSpecificationBugTest.whereNullFailingTest(JPAUnitTestCase.java:49)
-```
-
-Argument of `Specification#where(Specification<T>)` is marked as `@Nullable` so I thought this would have worked.
-
-Also, using this specification with a `JpaRepository` / `JpaSpecificationExecutor` (`taskRepository.findAll(Specification.where(null))`) seems to work fine as a "match all" query.
-
-Also, I found a workaround:
-
-```java
-Specification<Task> matchAllSpecification = (root, query, cb) -> cb.conjunction();
-```
+See issue here : https://github.com/spring-projects/spring-data-jpa/issues/3738
