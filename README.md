@@ -2,8 +2,9 @@
 
 Tests are located [here](src/test/java/org/hibernate/bugs/MatchAllSpecificationBugTest.java).
 
-The idea is to create a "match all" `org.springframework.data.jpa.domain.Specification` (a specification without any restriction).
-When I use `Specification.where(null)`, I get a `NullPointerException` in Hibernate code when executing the query:
+I wanted to to use `Specification.where(null)` as a "match all" `org.springframework.data.jpa.domain.Specification` (a specification without any restriction).
+
+But I get a `NullPointerException` inside Hibernate code when using it with a `CriteriaBuilder`:
 
 ```java
 Specification<Task> matchAllSpecification = Specification.where(null);
@@ -32,9 +33,11 @@ java.lang.NullPointerException: Cannot invoke "org.hibernate.query.sqm.tree.expr
 	at org.hibernate.bugs.MatchAllSpecificationBugTest.whereNullFailingTest(JPAUnitTestCase.java:49)
 ```
 
-Argument of `Specification#where(Specification<T>)` is marked as `@Nullable` and using this specification with a `JpaRepository` / `JpaSpecificationExecutor` (`taskRepository.findAll(Specification.where(null))`) seems to work fine as a "match all" query.
+Argument of `Specification#where(Specification<T>)` is marked as `@Nullable` so I thought this would have worked.
 
-This workaround works:
+Also, using this specification with a `JpaRepository` / `JpaSpecificationExecutor` (`taskRepository.findAll(Specification.where(null))`) seems to work fine as a "match all" query.
+
+Also, I found a workaround:
 
 ```java
 Specification<Task> matchAllSpecification = (root, query, cb) -> cb.conjunction();
